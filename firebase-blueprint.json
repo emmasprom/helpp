@@ -1,0 +1,142 @@
+{
+  "entities": {
+    "Campaign": {
+      "title": "Campaign",
+      "description": "Fundraising campaign details",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "shortDescription": { "type": "string" },
+        "fullStory": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "videoUrl": { "type": "string" },
+        "targetAmount": { "type": "number" },
+        "raisedAmount": { "type": "number" },
+        "donorCount": { "type": "number" },
+        "category": { "type": "string" },
+        "urgency": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
+        "status": { "type": "string", "enum": ["draft", "published", "ended"] },
+        "endDate": { "type": "string", "format": "date-time" },
+        "isAiOptimized": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "targetAmount", "status"]
+    },
+    "Donation": {
+      "title": "Donation",
+      "description": "Individual donation records",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "campaignId": { "type": "string" },
+        "donorId": { "type": "string" },
+        "amount": { "type": "number" },
+        "currency": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "success", "failed"] },
+        "paystackReference": { "type": "string" },
+        "isRecurring": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["campaignId", "amount", "status"]
+    },
+    "Donor": {
+      "title": "Donor",
+      "description": "Donor profile and contact info",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "email": { "type": "string" },
+        "fullName": { "type": "string" },
+        "phoneNumber": { "type": "string" },
+        "totalDonated": { "type": "number" },
+        "donationCount": { "type": "number" },
+        "lastDonationAt": { "type": "string", "format": "date-time" },
+        "score": { "type": "number" },
+        "segment": { "type": "string", "enum": ["new", "active", "high-value", "recurring", "inactive", "vip"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["email"]
+    },
+    "ChatbotMessage": {
+      "title": "Chatbot Message",
+      "description": "History of AI chatbot interactions",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "role": { "type": "string", "enum": ["user", "assistant"] },
+        "content": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      }
+    },
+    "AnalyticsEvent": {
+      "title": "Analytics Event",
+      "description": "System tracking events",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string" },
+        "path": { "type": "string" },
+        "userId": { "type": "string" },
+        "metadata": { "type": "object" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      }
+    },
+    "AiDecision": {
+      "title": "AI Decision",
+      "description": "Log of autonomous or suggested AI actions",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string" },
+        "suggestion": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected", "auto-applied"] },
+        "campaignId": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      }
+    },
+    "Admin": {
+      "title": "Admin",
+      "description": "Authorized administrators",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "role": { "type": "string" }
+      }
+    }
+  },
+  "firestore": {
+    "campaigns/{campaignId}": {
+      "schema": "Campaign",
+      "description": "Public and private campaigns"
+    },
+    "donations/{donationId}": {
+      "schema": "Donation",
+      "description": "All donations"
+    },
+    "donors/{donorId}": {
+      "schema": "Donor",
+      "description": "CRM donor profiles"
+    },
+    "donors/{donorId}/activities/{activityId}": {
+      "schema": { "type": "object", "properties": { "type": { "type": "string" }, "description": { "type": "string" }, "timestamp": { "type": "string" } } },
+      "description": "Donor activity logs"
+    },
+    "chatbot_messages/{messageId}": {
+      "schema": "ChatbotMessage",
+      "description": "AI chat history"
+    },
+    "analytics_events/{eventId}": {
+      "schema": "AnalyticsEvent",
+      "description": "System logs"
+    },
+    "ai_decisions/{decisionId}": {
+      "schema": "AiDecision",
+      "description": "AI management logs"
+    },
+    "admins/{adminId}": {
+      "schema": "Admin",
+      "description": "Registered admins"
+    }
+  }
+}

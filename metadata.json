@@ -1,0 +1,6 @@
+{
+  "name": "HELPP NGO Infrastructure",
+  "description": "Planting the future and empowering lives. An AI-powered platform for sustainable agriculture, renewable energy, and community empowerment.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

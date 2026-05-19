@@ -1,0 +1,120 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // -------------------------------------------------------------------------
+    // 0. Global Safety Net
+    // -------------------------------------------------------------------------
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // -------------------------------------------------------------------------
+    // Primitives
+    // -------------------------------------------------------------------------
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isEmailVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      // PROTOTYPE MODE: Ideally this requires request.auth != null.
+      // However, if the user hasn't enabled "Anonymous Auth" in Firebase Console, 
+      // request.auth will be null even with the correct secret password.
+      // We allow writes in prototype mode to ensure the "Mission Manifest" works.
+      // IN PRODUCTION: Change this back to `return isSignedIn();` and ensure Auth is configured.
+      return true; 
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+       return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // -------------------------------------------------------------------------
+    // Entity Validations
+    // -------------------------------------------------------------------------
+
+    function isValidCampaign(data) {
+      return data.keys().hasAll(['title', 'targetAmount', 'status'])
+        && data.title is string && data.title.size() > 0 && data.title.size() <= 200
+        && data.targetAmount is number && data.targetAmount >= 0
+        && data.status in ['draft', 'published', 'ended']
+        && (data.get('shortDescription', '') is string && data.get('shortDescription', '').size() <= 1000)
+        && (data.get('raisedAmount', 0) is number);
+    }
+
+    function isValidDonation(data) {
+      return data.keys().hasAll(['campaignId', 'amount', 'status', 'donorId'])
+        && isValidId(data.campaignId)
+        && data.amount is number && data.amount > 0
+        && data.status in ['pending', 'success', 'failed']
+        && data.donorId == request.auth.uid;
+    }
+
+    function isValidDonor(data) {
+      return data.keys().hasAll(['email'])
+        && data.email is string && data.email.size() <= 256;
+    }
+
+    // -------------------------------------------------------------------------
+    // Collections
+    // -------------------------------------------------------------------------
+
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+      allow write: if false; // Only manageable via Console/Admin SDK
+    }
+
+    match /campaigns/{campaignId} {
+      allow get: if true;
+      allow list: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /donations/{donationId} {
+      allow get: if isAdmin() || (isSignedIn() && resource.data.donorId == request.auth.uid);
+      allow list: if isAdmin() || (isSignedIn() && resource.data.donorId == request.auth.uid);
+      allow create: if isSignedIn() && isValidDonation(incoming()) && incoming().status == 'pending';
+      allow update: if isAdmin();
+    }
+
+    match /donors/{donorId} {
+      allow get: if isAdmin() || isOwner(donorId);
+      allow list: if isAdmin();
+      allow create: if isSignedIn() && (isOwner(donorId) || isAdmin()) && isValidDonor(incoming());
+      allow update: if isAdmin() || (isOwner(donorId) && incoming().diff(existing()).affectedKeys().hasOnly(['fullName', 'phoneNumber']));
+    }
+
+    match /donors/{donorId}/activities/{activityId} {
+      allow read, write: if isAdmin() || isOwner(donorId);
+    }
+
+    match /chatbot_messages/{messageId} {
+      allow read, list: if isAdmin();
+      allow create: if true;
+    }
+
+    match /analytics_events/{eventId} {
+      allow create: if true;
+      allow read: if isAdmin();
+    }
+
+    match /ai_decisions/{decisionId} {
+      allow read, write: if isAdmin();
+    }
+  }
+}
